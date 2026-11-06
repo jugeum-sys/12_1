@@ -1,46 +1,17 @@
-#define _CRT_SECURE_NO_WARNINGS   /* Visual Studio C4996 ¹æÁö */
-
-/*
- * quick_compare.c
- * ---------------------------------------------------------------
- * °úÁ¦ 12 - Äü Á¤·ÄÀÇ ÇÇ¹ş ¼±ÅÃ¿¡ µû¸¥ ¼º´É ºñ±³
- *
- *  ¹«ÀÛÀ§ Á¤¼ö µ¥ÀÌÅÍ¸¦ n = 1000, 2000, 4000, 8000, 16000, 20000 °³·Î ¸¸µé¾î
- *  °°Àº ¿øº»ÀÇ º¹»çº»À» ¼¼ °¡Áö ÇÇ¹ş ¼±ÅÃ ¹æ¹ıÀ¸·Î Á¤·ÄÇÏ°í ºñ±³ È½¼ö¸¦ ¼¾´Ù.
- *
- *    [1] Ã¹ ¹øÂ° ¿ø¼Ò (First)
- *    [2] ¹«ÀÛÀ§ ¿ø¼Ò (Random)       - ºĞÇÒÇÒ ¶§¸¶´Ù »õ·Î °í¸¥´Ù
- *    [3] ¼¼ ¿ø¼ÒÀÇ Áß¾Ó°ª (Median-3) - Ã¹¡¤°¡¿îµ¥¡¤¸¶Áö¸· Áß °¡¿îµ¥ °ª
- *
- *  ¼¼ ¹æ¹ıÀº ÇÇ¹şÀ» °í¸£´Â ºÎºĞ¸¸ ´Ù¸£°í ºĞÇÒ ¾Ë°í¸®ÁòÀº ¿ÏÀüÈ÷ °°´Ù.
- *
- *  [º¸³Ê½º] Àç±Í Äü Á¤·Ä°ú ½ºÅÃÀ» ¾²´Â ¹İº¹ Äü Á¤·ÄÀÇ ½ÇÇà½Ã°£ ºñ±³
- *
- * [¼¼´Â ±âÁØ]
- *   ºĞÇÒ °úÁ¤¿¡¼­ µ¥ÀÌÅÍ °ª°ú ÇÇ¹ş °ªÀ» ºñ±³ÇÑ È½¼ö¸¦ ¼¾´Ù.
- *   Median-3¿¡¼­ Áß¾Ó°ªÀ» °í¸£±â À§ÇÑ ºñ±³µµ Æ÷ÇÔÇÑ´Ù.
- *   ¹İº¹¹® ÀÎµ¦½º °Ë»ç, ¹«ÀÛÀ§ À§Ä¡ »ı¼º, µ¥ÀÌÅÍ ÀÌµ¿Àº ¼¼Áö ¾Ê´Â´Ù.
- *   µ¥ÀÌÅÍ »ı¼º°ú ¹è¿­ º¹»çµµ ¼¼Áö ¾Ê´Â´Ù.
- *
- * [³­¼ö]
- *   rand()¸¦ ¾²Áö ¾Ê°í ¼±Çü ÇÕµ¿¹ı(LCG)À¸·Î Á÷Á¢ ¸¸µé¾ú´Ù.
- *   time.h´Â º¸³Ê½º °úÁ¦ÀÇ ½ÇÇà½Ã°£ ÃøÁ¤¿¡¸¸ »ç¿ëÇÑ´Ù.
- */
-
+#define _CRT_SECURE_NO_WARNINGS   
 #include <stdio.h>
 #include <time.h>
 
 #define MAX_N      20000
-#define MAX_VALUE 100000      /* µ¥ÀÌÅÍ °ª ¹üÀ§ 0 ~ 99999 (Áßº¹ Çã¿ë) */
-#define BONUS_N    10000      /* º¸³Ê½º ½ÇÇèÀÇ µ¥ÀÌÅÍ Å©±â */
-#define REPEAT       500      /* ½ÇÇà½Ã°£ ÃøÁ¤ ¹İº¹ È½¼ö */
+#define MAX_VALUE 100000      
+#define BONUS_N    10000      
+#define REPEAT       500      
 #define DEFAULT_SEED 12345
 
 #define PIVOT_FIRST  0
 #define PIVOT_RANDOM 1
 #define PIVOT_MEDIAN 2
 
- /* ---------------- ³­¼ö »ı¼º±â ---------------- */
 
 static unsigned long rngState = DEFAULT_SEED;
 static void rng_seed(unsigned long seed) { rngState = seed; }
@@ -49,7 +20,6 @@ static int rng_next(int bound) {
     return (int)((rngState >> 16) % (unsigned long)bound);
 }
 
-/* ---------------- °øÅë ---------------- */
 
 static int original[MAX_N], work[MAX_N];
 
@@ -71,23 +41,18 @@ static int is_sorted(const int a[], int n) {
     return 1;
 }
 
-/* ---------------- ÇÇ¹ş ¼±ÅÃ ---------------- */
 
-/*
- * ¼¼ °ªÀÇ Áß¾Ó°ªÀÌ ÀÖ´Â À§Ä¡¸¦ µ¹·ÁÁØ´Ù.
- * »ê¼úÆò±ÕÀÌ ¾Æ´Ï¶ó Å©±â¼øÀ¸·Î °¡¿îµ¥ÀÎ °ªÀÌ´Ù. ºñ±³´Â 2~3È¸ ¹ß»ıÇÑ´Ù.
- */
 static int median_of_three(const int a[], int l, int m, int r, long long* cmp) {
     (*cmp)++;
     if (a[l] > a[m]) {
         (*cmp)++;
-        if (a[m] > a[r]) return m;              /* r < m < l */
+        if (a[m] > a[r]) return m;             
         (*cmp)++;
         return (a[l] > a[r]) ? r : l;
     }
     else {
         (*cmp)++;
-        if (a[l] > a[r]) return l;              /* r < l <= m */
+        if (a[l] > a[r]) return l;             
         (*cmp)++;
         return (a[m] > a[r]) ? r : m;
     }
@@ -99,50 +64,39 @@ static int choose_pivot(const int a[], int left, int right, int method, long lon
     return median_of_three(a, left, (left + right) / 2, right, cmp);
 }
 
-/* ---------------- ºĞÇÒ (¼¼ ¹æ¹ı °øÅë) ---------------- */
 
-/*
- * °í¸¥ ÇÇ¹şÀ» ¸Ç µÚ·Î º¸³½ µÚ, ¿ŞÂÊºÎÅÍ ÈÈÀ¸¸ç ÇÇ¹şº¸´Ù ÀÛ°Å³ª °°Àº °ªÀ» ¾ÕÂÊ¿¡ ¸ğÀº´Ù.
- * ¸¶Áö¸·¿¡ ÇÇ¹şÀ» ±× °æ°è ÀÚ¸®¿¡ µ¹·Á³õÀ¸¸é ÇÇ¹şÀº Á¦ÀÚ¸®¸¦ Ã£Àº °ÍÀÌ´Ù.
- * ÀÌ ÇÔ¼öÀÇ ºñ±³ È½¼ö´Â ±¸°£ ±æÀÌ - 1 ·Î ÀÏÁ¤ÇÏ´Ù.
- */
 static int partition(int a[], int left, int right, int method, long long* cmp) {
     int p, pivot, i, j;
 
     p = choose_pivot(a, left, right, method, cmp);
-    swap(&a[p], &a[right]);                     /* ÇÇ¹şÀ» ¸Ç µÚ·Î */
+    swap(&a[p], &a[right]);                     
     pivot = a[right];
 
     i = left - 1;
     for (j = left; j < right; j++) {
-        (*cmp)++;                               /* µ¥ÀÌÅÍ¿Í ÇÇ¹ş ºñ±³ */
+        (*cmp)++;                              
         if (a[j] <= pivot) {
             i++;
             swap(&a[i], &a[j]);
         }
     }
-    swap(&a[i + 1], &a[right]);                 /* ÇÇ¹şÀ» Á¦ÀÚ¸®·Î */
+    swap(&a[i + 1], &a[right]);                
     return i + 1;
 }
 
-/* ---------------- Àç±Í Äü Á¤·Ä ---------------- */
 
 static void quick_recursive(int a[], int left, int right, int method, long long* cmp) {
     int p;
     if (left >= right) return;
     p = partition(a, left, right, method, cmp);
-    quick_recursive(a, left, p - 1, method, cmp);    /* ÇÇ¹ş ¿ŞÂÊ */
-    quick_recursive(a, p + 1, right, method, cmp);   /* ÇÇ¹ş ¿À¸¥ÂÊ */
+    quick_recursive(a, left, p - 1, method, cmp);   
+    quick_recursive(a, p + 1, right, method, cmp);   
 }
 
-/* ---------------- ¹İº¹ Äü Á¤·Ä (½ºÅÃ »ç¿ë) ---------------- */
 
 typedef struct { int left, right; } Range;
 
-/*
- * Àç±Í È£Ãâ ´ë½Å "¾ÆÁ÷ Á¤·ÄÇÏÁö ¾ÊÀº ±¸°£"À» ½ºÅÃ¿¡ ½×¾Æ µÎ°í ÇÏ³ª¾¿ ²¨³» Ã³¸®ÇÑ´Ù.
- * Å« ÂÊÀ» ¸ÕÀú ½×°í ÀÛÀº ÂÊÀ» ³ªÁß¿¡ ½×À¸¸é(= ÀÛÀº ÂÊºÎÅÍ Ã³¸®) ½ºÅÃÀÌ ±í¾îÁöÁö ¾Ê´Â´Ù.
- */
+
 static void quick_iterative(int a[], int n, int method, long long* cmp) {
     static Range stack[MAX_N];
     int top = -1, left, right, p;
@@ -160,7 +114,7 @@ static void quick_iterative(int a[], int n, int method, long long* cmp) {
 
         p = partition(a, left, right, method, cmp);
 
-        if (p - left > right - p) {             /* Å« ÂÊÀ» ¸ÕÀú ½×´Â´Ù */
+        if (p - left > right - p) {             
             if (left < p - 1) { top++; stack[top].left = left;  stack[top].right = p - 1; }
             if (p + 1 < right) { top++; stack[top].left = p + 1; stack[top].right = right; }
         }
@@ -171,14 +125,13 @@ static void quick_iterative(int a[], int n, int method, long long* cmp) {
     }
 }
 
-/* ---------------- ½Ãµå ÀÔ·Â ---------------- */
 
 static unsigned long ask_seed(void) {
     char line[64];
     unsigned long value = 0;
     int i = 0, digits = 0;
 
-    printf("³­¼ö ½Ãµå¸¦ ÀÔ·ÂÇÏ¼¼¿ä (±×³É Enter¸¦ ´©¸£¸é %d): ", DEFAULT_SEED);
+    printf("ë‚œìˆ˜ ì‹œë“œë¥¼ ì…ë ¥í•˜ì„¸ìš” (ê·¸ëƒ¥ Enterë¥¼ ëˆ„ë¥´ë©´ %d): ", DEFAULT_SEED);
     if (fgets(line, sizeof(line), stdin) == NULL) return DEFAULT_SEED;
     while (line[i] == ' ' || line[i] == '\t') i++;
     while (line[i] >= '0' && line[i] <= '9') {
@@ -188,7 +141,6 @@ static unsigned long ask_seed(void) {
     return (digits > 0) ? value : DEFAULT_SEED;
 }
 
-/* ---------------- main ---------------- */
 
 int main(void) {
     int sizes[] = { 1000, 2000, 4000, 8000, 16000, 20000 };
@@ -200,7 +152,6 @@ int main(void) {
 
     rng_seed(ask_seed());
 
-    /* ---------- 1. ÇÇ¹ş ¼±ÅÃ ¹æ¹ıº° ºñ±³ È½¼ö ---------- */
     for (k = 0; k < caseCount; k++) {
         n = sizes[k];
         make_random(original, n);
@@ -227,36 +178,34 @@ int main(void) {
     }
 
     printf("\n------------------------------------\n");
-    printf("\n[¿ä¾à] n log2 n °ú ºñ±³\n");
+    printf("\n[ìš”ì•½] n log2 n ê³¼ ë¹„êµ\n");
     printf("     n        First       Random    Median-3     n log2 n   First/nlogn  Med3/nlogn\n");
     for (k = 0; k < caseCount; k++) {
         double nn = (double)sizes[k], nlogn;
         int b = 0, t = sizes[k];
-        while (t > 1) { t /= 2; b++; }                        /* log2 n (Á¤¼ö ºÎºĞ) */
+        while (t > 1) { t /= 2; b++; }                       
         nlogn = nn * b;
         printf("%6d  %11lld  %11lld  %11lld  %11.0f  %10.2f  %10.2f\n",
             sizes[k], fstCmp[k], rndCmp[k], medCmp[k], nlogn,
             (double)fstCmp[k] / nlogn, (double)medCmp[k] / nlogn);
     }
 
-    printf("\n[µ¥ÀÌÅÍ°¡ 2¹è°¡ µÉ ¶§ ºñ±³ È½¼öÀÇ Áõ°¡ ¹èÀ²]\n");
+    printf("\n[ë°ì´í„°ê°€ 2ë°°ê°€ ë  ë•Œ ë¹„êµ íšŸìˆ˜ì˜ ì¦ê°€ ë°°ìœ¨]\n");
     printf("        n           First     Random   Median-3\n");
     for (k = 1; k < caseCount; k++) {
-        printf("%6d -> %6d   %7.2f¹è  %7.2f¹è  %7.2f¹è\n",
+        printf("%6d -> %6d   %7.2fë°°  %7.2fë°°  %7.2fë°°\n",
             sizes[k - 1], sizes[k],
             (double)fstCmp[k] / (double)fstCmp[k - 1],
             (double)rndCmp[k] / (double)rndCmp[k - 1],
             (double)medCmp[k] / (double)medCmp[k - 1]);
     }
-    printf("\nÁ¤·Ä °á°ú È®ÀÎ : %s\n", ok ? "¸ğµç °æ¿ì ¿À¸§Â÷¼ø Á¤·Ä ¼º°ø" : "½ÇÆĞÇÑ °æ¿ì ÀÖÀ½");
+    printf("\nì •ë ¬ ê²°ê³¼ í™•ì¸ : %s\n", ok ? "ëª¨ë“  ê²½ìš° ì˜¤ë¦„ì°¨ìˆœ ì •ë ¬ ì„±ê³µ" : "ì‹¤íŒ¨í•œ ê²½ìš° ìˆìŒ");
 
-    /* ---------- 2. Ãß°¡ ½ÇÇè: Å©±âº° 30È¸ Æò±Õ ---------- */
-    /* ÇÑ ¹ø¸¸ Àç¸é ¾î´À ¹æ¹ıÀÌ À¯¸®ÇÑÁö ÀâÀ½¿¡ ¹¯È÷¹Ç·Î, Å©±â¸¶´Ù »õ µ¥ÀÌÅÍ·Î 30È¸ ¹İº¹ÇØ Æò±ÕÀ» ³½´Ù */
     {
         int TRIALS = 30, t;
         long long sf, sr, sm;
         printf("\n------------------------------------\n");
-        printf("\n[Ãß°¡ ½ÇÇè] Å©±âº° %dÈ¸ Æò±Õ ºñ±³ È½¼ö\n", TRIALS);
+        printf("\n[ì¶”ê°€ ì‹¤í—˜] í¬ê¸°ë³„ %díšŒ í‰ê·  ë¹„êµ íšŸìˆ˜\n", TRIALS);
         printf("     n        First       Random    Median-3   First/Med3  Random/Med3\n");
         for (k = 0; k < caseCount; k++) {
             n = sizes[k];
@@ -277,18 +226,15 @@ int main(void) {
         }
     }
 
-    /* ---------- 3. Ãß°¡ ½ÇÇè: ÀÌ¹Ì Á¤·ÄµÈ µ¥ÀÌÅÍ ---------- */
-    /* ÇÇ¹ş ¼±ÅÃÀÌ ¿Ö Áß¿äÇÑÁö´Â Á¤·ÄµÈ ÀÔ·Â¿¡¼­ °¡Àå ºĞ¸íÇÏ°Ô µå·¯³­´Ù.
-       Ã¹ ¿ø¼Ò ÇÇ¹şÀº Àç±Í ±íÀÌ°¡ n±îÁö ±í¾îÁö¹Ç·Î Å©±â¸¦ 2,000À¸·Î ÁÙ¿© ½ÇÇèÇÑ´Ù. */
     {
         int m = 2000, i, j, t;
         make_random(original, m);
-        for (i = 0; i < m - 1; i++)                 /* ½ÇÇè ÀÔ·Â ÁØºñ (ÃøÁ¤ Á¦¿Ü) */
+        for (i = 0; i < m - 1; i++)                 
             for (j = i + 1; j < m; j++)
                 if (original[j] < original[i]) { t = original[i]; original[i] = original[j]; original[j] = t; }
 
         printf("\n------------------------------------\n");
-        printf("\n[Ãß°¡ ½ÇÇè] ÀÌ¹Ì Á¤·ÄµÈ µ¥ÀÌÅÍ %d°³\n\n", m);
+        printf("\n[ì¶”ê°€ ì‹¤í—˜] ì´ë¯¸ ì •ë ¬ëœ ë°ì´í„° %dê°œ\n\n", m);
 
         copy_array(original, work, m);
         cmp = 0; quick_recursive(work, 0, m - 1, PIVOT_FIRST, &cmp);
@@ -303,10 +249,8 @@ int main(void) {
         printf("Quick Sort (Median-3) : %lld comparisons\n", cmp);
     }
 
-    /* ---------- 4. º¸³Ê½º: Àç±Í vs ¹İº¹ ---------- */
     make_random(original, BONUS_N);
 
-    /* ¹è¿­ º¹»ç ½Ã°£À» µû·Î Àç¼­ »©¸é Á¤·Ä ½Ã°£¸¸ ³²´Â´Ù */
     start = clock();
     for (r = 0; r < REPEAT; r++) copy_array(original, work, BONUS_N);
     end = clock();
@@ -333,13 +277,13 @@ int main(void) {
     if (!is_sorted(work, BONUS_N)) ok = 0;
 
     printf("\n------------------------------------\n");
-    printf("\n[º¸³Ê½º] Àç±Í Äü Á¤·Ä°ú ¹İº¹ Äü Á¤·Ä\n\n");
+    printf("\n[ë³´ë„ˆìŠ¤] ì¬ê·€ í€µ ì •ë ¬ê³¼ ë°˜ë³µ í€µ ì •ë ¬\n\n");
     printf("Data Size : %d\n", BONUS_N);
     printf("Pivot     : Median-of-Three\n\n");
     printf("Recursive Quick Sort : %.4f ms\n", tRec * 1000.0 / CLOCKS_PER_SEC / REPEAT);
     printf("Iterative Quick Sort : %.4f ms\n", tIter * 1000.0 / CLOCKS_PER_SEC / REPEAT);
-    printf("(%dÈ¸ ¹İº¹ÀÇ Æò±Õ, ¹è¿­ º¹»ç ½Ã°£Àº »©°í ÃøÁ¤)\n", REPEAT);
-    printf("ºñ±³ È½¼ö´Â µÎ ¹æ¹ıÀÌ °°´Ù : %lld\n", cmp);
-    printf("\nÁ¤·Ä °á°ú È®ÀÎ : %s\n", ok ? "¸ğµç °æ¿ì ¿À¸§Â÷¼ø Á¤·Ä ¼º°ø" : "½ÇÆĞÇÑ °æ¿ì ÀÖÀ½");
+    printf("(%díšŒ ë°˜ë³µì˜ í‰ê· , ë°°ì—´ ë³µì‚¬ ì‹œê°„ì€ ë¹¼ê³  ì¸¡ì •)\n", REPEAT);
+    printf("ë¹„êµ íšŸìˆ˜ëŠ” ë‘ ë°©ë²•ì´ ê°™ë‹¤ : %lld\n", cmp);
+    printf("\nì •ë ¬ ê²°ê³¼ í™•ì¸ : %s\n", ok ? "ëª¨ë“  ê²½ìš° ì˜¤ë¦„ì°¨ìˆœ ì •ë ¬ ì„±ê³µ" : "ì‹¤íŒ¨í•œ ê²½ìš° ìˆìŒ");
     return 0;
 }
